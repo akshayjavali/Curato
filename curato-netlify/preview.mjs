@@ -1,0 +1,6 @@
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {resolve,extname,sep} from 'node:path';
+const root=resolve('public');
+const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml'};
+createServer(async(req,res)=>{try{let path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);if(path==='/api/session'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({authenticated:false,configured:false}));return;}if(path.startsWith('/api/')&&path!=='/api/catalog'){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'This local preview is read-only. Deploy to Netlify to activate sign-in and persistent content editing.'}));return;}if(path==='/api/catalog')path='/seed.json';if(path==='/'||/^\/(product|journal)\//.test(path))path='/index.html';const target=resolve(root,'.'+path);if(!target.startsWith(root+sep))throw Error('Invalid path');res.writeHead(200,{'Content-Type':types[extname(target)]||'application/octet-stream'});res.end(await readFile(target));}catch{res.writeHead(404);res.end('Not found');}}).listen(4173,'127.0.0.1',()=>console.log('Local: http://127.0.0.1:4173 (read-only storefront preview)'));
